@@ -79,22 +79,23 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun PokemonApp() {
     val navController = rememberNavController()
+    val pokemonList = remember { mutableStateOf<List<Pokemon>>(emptyList()) }
 
     NavHost(navController = navController, startDestination = "main") {
         composable("main") {
-            MainFragment(navController)
+            MainFragment(navController, pokemonList)
         }
         composable("detail/{pokemonId}") { backStackEntry ->
             val pokemonId = backStackEntry.arguments?.getString("pokemonId")?.toIntOrNull() ?: 1
-            DetailFragment(navController, pokemonId)
+            DetailFragment(navController, pokemonId, pokemonList.value)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainFragment(navController: NavController) {
-    var pokemonList by remember { mutableStateOf<List<Pokemon>>(emptyList()) }
+fun MainFragment(navController: NavController, pokemonListState: MutableState<List<Pokemon>>) {
+    var pokemonList by pokemonListState
     var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
@@ -122,7 +123,7 @@ fun MainFragment(navController: NavController) {
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF6200EA)
+                    containerColor = Color(0xFFDC143C) // Rojo
                 )
             )
         }
@@ -197,39 +198,31 @@ fun PokemonListItem(pokemon: Pokemon, onClick: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DetailFragment(navController: NavController, pokemonId: Int) {
+fun DetailFragment(navController: NavController, pokemonId: Int, pokemonList: List<Pokemon>) {
     var pokemonDetail by remember { mutableStateOf<PokemonDetail?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(pokemonId) {
-        try {
-            val detail = withContext(Dispatchers.IO) {
-                val url = URL("https://pokeapi.co/api/v2/pokemon/$pokemonId")
-                val jsonString = url.readText()
-                parsePokemonDetail(jsonString)
-            }
-            pokemonDetail = detail
-            isLoading = false
-        } catch (e: Exception) {
-            errorMessage = "Error: ${e.message}"
-            isLoading = false
+        // Buscar el nombre en la lista que ya tenemos PRIMERO
+        val pokemonName = pokemonList.find { it.id == pokemonId }?.name ?: "pokemon-$pokemonId"
 
-            // Crear un PokemonDetail básico con URLs generadas
-            val basicDetail = PokemonDetail(
-                id = pokemonId,
-                name = "Pokemon #$pokemonId",
-                height = 0,
-                weight = 0,
-                sprites = PokemonSprites(
-                    front_default = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/$pokemonId.png",
-                    back_default = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/$pokemonId.png",
-                    front_shiny = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/$pokemonId.png",
-                    back_shiny = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/shiny/$pokemonId.png"
-                )
+        // Crear el detalle directamente con el nombre correcto, sin parsear el JSON del detalle
+        val detail = PokemonDetail(
+            id = pokemonId,
+            name = pokemonName,
+            height = 0,
+            weight = 0,
+            sprites = PokemonSprites(
+                front_default = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/$pokemonId.png",
+                back_default = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/$pokemonId.png",
+                front_shiny = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/$pokemonId.png",
+                back_shiny = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/shiny/$pokemonId.png"
             )
-            pokemonDetail = basicDetail
-        }
+        )
+
+        pokemonDetail = detail
+        isLoading = false
     }
 
     Scaffold(
@@ -237,7 +230,7 @@ fun DetailFragment(navController: NavController, pokemonId: Int) {
             TopAppBar(
                 title = {
                     Text(
-                        "Detalle del Pokemon",
+                        "Pokemon",
                         color = Color.White,
                         fontWeight = FontWeight.Medium
                     )
@@ -252,7 +245,7 @@ fun DetailFragment(navController: NavController, pokemonId: Int) {
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF6200EA)
+                    containerColor = Color(0xFFDC143C) // Rojo
                 )
             )
         }
@@ -295,12 +288,12 @@ fun DetailFragment(navController: NavController, pokemonId: Int) {
                                 // Front
                                 PokemonImageCard(
                                     imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${detail.id}.png",
-                                    label = "Front"
+                                    label = "Delante Normal"
                                 )
                                 // Back
                                 PokemonImageCard(
                                     imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${detail.id}.png",
-                                    label = "Back"
+                                    label = "Atras Normal"
                                 )
                             }
 
@@ -313,24 +306,14 @@ fun DetailFragment(navController: NavController, pokemonId: Int) {
                                 // Front Shiny
                                 PokemonImageCard(
                                     imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${detail.id}.png",
-                                    label = "Front Shiny"
+                                    label = "Delante Shiny"
                                 )
                                 // Back Shiny
                                 PokemonImageCard(
                                     imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/shiny/${detail.id}.png",
-                                    label = "Back Shiny"
+                                    label = "Atras Shiny"
                                 )
                             }
-                        }
-
-                        // Mostrar error si existe
-                        errorMessage?.let { error ->
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = "Using fallback images",
-                                color = Color.Gray,
-                                fontSize = 12.sp
-                            )
                         }
                     }
                 }
@@ -418,17 +401,41 @@ fun parseJsonResponse(jsonString: String): List<Pokemon> {
 
 fun parsePokemonDetail(jsonString: String): PokemonDetail {
     try {
-        // Extraer ID
+        // Extraer ID - buscar el primer "id" que aparece (que es el del Pokémon)
         val idPattern = "\"id\":"
         val idStart = jsonString.indexOf(idPattern) + idPattern.length
         val idEnd = jsonString.indexOf(",", idStart)
         val id = jsonString.substring(idStart, idEnd).trim().toInt()
 
-        // Extraer name
+        // Extraer name - El nombre del Pokémon aparece muy temprano en el JSON
+        // Buscar el patrón exacto que aparece después del ID
+        val baseExpIndex = jsonString.indexOf("\"base_experience\":")
         val namePattern = "\"name\":\""
-        val nameStart = jsonString.indexOf(namePattern) + namePattern.length
+        var nameStart = jsonString.indexOf(namePattern)
+
+        // El nombre real del Pokémon está ANTES de base_experience
+        // Si encontramos base_experience, buscar el name anterior a él
+        if (baseExpIndex != -1) {
+            var currentNameStart = nameStart
+            while (currentNameStart != -1 && currentNameStart < baseExpIndex) {
+                val nextNameStart = jsonString.indexOf(namePattern, currentNameStart + namePattern.length)
+                if (nextNameStart != -1 && nextNameStart < baseExpIndex) {
+                    currentNameStart = nextNameStart
+                } else {
+                    break
+                }
+            }
+            nameStart = currentNameStart
+        }
+
+        nameStart += namePattern.length
         val nameEnd = jsonString.indexOf("\"", nameStart)
-        val name = jsonString.substring(nameStart, nameEnd)
+        val name = if (nameStart > 0 && nameEnd > nameStart) {
+            jsonString.substring(nameStart, nameEnd)
+        } else {
+            // Como fallback, usar los nombres conocidos por ID
+            getPokemonNameById(id)
+        }
 
         // Para sprites, usar URLs construidas directamente
         val sprites = PokemonSprites(
@@ -440,9 +447,9 @@ fun parsePokemonDetail(jsonString: String): PokemonDetail {
 
         return PokemonDetail(id, name, 0, 0, sprites)
     } catch (e: Exception) {
-        // Fallback con ID 1 si todo falla
+        // Fallback con ID específico
         return PokemonDetail(
-            1, "pokemon", 0, 0,
+            1, "bulbasaur", 0, 0,
             PokemonSprites(
                 "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png",
                 "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/1.png",
@@ -451,4 +458,31 @@ fun parsePokemonDetail(jsonString: String): PokemonDetail {
             )
         )
     }
+}
+
+// Función auxiliar para obtener nombres por ID como fallback
+fun getPokemonNameById(id: Int): String {
+    val pokemonNames = mapOf(
+        1 to "bulbasaur", 2 to "ivysaur", 3 to "venusaur", 4 to "charmander", 5 to "charmeleon",
+        6 to "charizard", 7 to "squirtle", 8 to "wartortle", 9 to "blastoise", 10 to "caterpie",
+        11 to "metapod", 12 to "butterfree", 13 to "weedle", 14 to "kakuna", 15 to "beedrill",
+        16 to "pidgey", 17 to "pidgeotto", 18 to "pidgeot", 19 to "rattata", 20 to "raticate",
+        21 to "spearow", 22 to "fearow", 23 to "ekans", 24 to "arbok", 25 to "pikachu",
+        26 to "raichu", 27 to "sandshrew", 28 to "sandslash", 29 to "nidoran-f", 30 to "nidorina",
+        31 to "nidoqueen", 32 to "nidoran-m", 33 to "nidorino", 34 to "nidoking", 35 to "clefairy",
+        36 to "clefable", 37 to "vulpix", 38 to "ninetales", 39 to "jigglypuff", 40 to "wigglytuff",
+        41 to "zubat", 42 to "golbat", 43 to "oddish", 44 to "gloom", 45 to "vileplume",
+        46 to "paras", 47 to "parasect", 48 to "venonat", 49 to "venomoth", 50 to "diglett",
+        51 to "dugtrio", 52 to "meowth", 53 to "persian", 54 to "psyduck", 55 to "golduck",
+        56 to "mankey", 57 to "primeape", 58 to "growlithe", 59 to "arcanine", 60 to "poliwag",
+        61 to "poliwhirl", 62 to "poliwrath", 63 to "abra", 64 to "kadabra", 65 to "alakazam",
+        66 to "machop", 67 to "machoke", 68 to "machamp", 69 to "bellsprout", 70 to "weepinbell",
+        71 to "victreebel", 72 to "tentacool", 73 to "tentacruel", 74 to "geodude", 75 to "graveler",
+        76 to "golem", 77 to "ponyta", 78 to "rapidash", 79 to "slowpoke", 80 to "slowbro",
+        81 to "magnemite", 82 to "magneton", 83 to "farfetchd", 84 to "doduo", 85 to "dodrio",
+        86 to "seel", 87 to "dewgong", 88 to "grimer", 89 to "muk", 90 to "shellder",
+        91 to "cloyster", 92 to "gastly", 93 to "haunter", 94 to "gengar", 95 to "onix",
+        96 to "drowzee", 97 to "hypno", 98 to "krabby", 99 to "kingler", 100 to "voltorb"
+    )
+    return pokemonNames[id] ?: "pokemon-$id"
 }
