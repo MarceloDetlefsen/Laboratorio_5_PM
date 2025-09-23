@@ -69,6 +69,10 @@ PokéAPI: https://pokeapi.co/api/v2/pokemon
 
 ### 📷 Capturas del Programa
 
-![Lista de Pokemones](/Menu.png)
+**Lista de Pokemones**
 
-![Vista Pokemon Específico](/Especifico.png)
+![Menu.png](Menu.png)
+
+**Vista Pokemon Específico**
+
+![Especifico.png](Especifico.png)
