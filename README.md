@@ -1,6 +1,82 @@
 ## Laboratorio 5 - Programación de Plataformas Móviles
 Una aplicación Android moderna desarrollada con Jetpack Compose que permite explorar los primeros 100 Pokémon utilizando la PokéAPI.
 
+____
+## CAMBIOS EN EL LABORATORIO 6
+
+### 🏗️ Arquitectura - MVVM con Clean Architecture
+
+Este proyecto implementa una arquitectura de tres capas claramente separadas:
+
+### 📂 Estructura de Capas
+
+```bash
+com.example.laboratorio5/
+│
+├── ui/                          # 🎨 CAPA DE PRESENTACIÓN
+│   ├── MainActivity.kt          # Activity principal
+│   ├── MainViewModel.kt         # ViewModel con StateFlow
+│   ├── PokemonApp.kt            # Configuración de navegación
+│   ├── MainScreen.kt            # Pantalla de lista de Pokémon
+│   └── DetailScreen.kt          # Pantalla de detalle
+│
+├── data/                        # 💾 CAPA DE DATOS
+│   ├── repository/
+│   │   └── MainRepository.kt    # Intermediario entre ViewModel y datos remotos
+│   │
+│   ├── remote/
+│   │   ├── ApiService.kt        # Interface de Retrofit
+│   │   └── RetrofitClient.kt    # Configuración de Retrofit
+│   │
+│   └── model/
+│       └── Pokemon.kt           # Modelos de datos y DTOs
+│
+└── ui/theme/                    # 🎨 TEMA DE LA APLICACIÓN
+```
+
+### 🔄 Flujo de Datos
+
+```bash
+UI (Compose) ←→ ViewModel (StateFlow) ←→ Repository ←→ ApiService (Retrofit) ←→ PokéAPI
+```
+
+**1. UI Layer (Presentación):**
+- `MainActivity`: Punto de entrada de la aplicación
+- `MainScreen` & `DetailScreen`: Composables que observan el estado del ViewModel
+- Responsabilidad: Renderizar UI y manejar interacciones del usuario
+
+**2. ViewModel Layer:**
+- `MainViewModel`: Maneja el estado de la UI usando `StateFlow`
+- `MainUiState`: Data class que contiene el estado (lista, loading, errores)
+- Responsabilidad: Lógica de presentación y gestión del estado
+
+**3. Repository Layer:**
+- `MainRepository`: Única fuente de verdad para los datos
+- Responsabilidad: Coordinar entre fuentes de datos (API, cache, BD)
+
+**4. Data Source Layer:**
+- `ApiService`: Interface de Retrofit con endpoints definidos
+- `RetrofitClient`: Configuración singleton de Retrofit
+- Responsabilidad: Comunicación HTTP con la API
+
+#### **Beneficios de esta Arquitectura**
+
+- ✅ ***Separación de Responsabilidades:*** Cada capa tiene una función específica
+- ✅ ***Testeable:*** Cada componente puede probarse de forma independiente
+- ✅ ***Escalable:*** Fácil agregar nuevas features sin afectar código existente
+- ✅ ***Mantenible:*** Código organizado y fácil de entender
+- ✅ ***Reusable:*** Los repositorios y servicios pueden compartirse entre ViewModels
+- ✅ ***Reactivo:*** StateFlow permite actualizaciones automáticas de la UI
+
+#### **Patrones Implementados**
+
+- ***MVVM (Model-View-ViewModel):*** Separación entre lógica de UI y datos
+- ***Repository Pattern:*** Abstracción de la fuente de datos
+- ***Singleton Pattern:*** Instancia única de Retrofit
+- ***Observer Pattern:*** StateFlow para observar cambios de estado
+- ***Dependency Injection:*** Inyección manual de dependencias
+___
+
 ### 📱 Características
 - Visualiza los primeros 100 Pokémon con imagen, nombre y número de Pokédex
 - Navega entre la lista principal y los detalles de cada Pokémon
@@ -76,3 +152,7 @@ PokéAPI: https://pokeapi.co/api/v2/pokemon
 **Vista Pokemon Específico**
 
 ![Especifico.png](Especifico.png)
+
+### 👨‍💻 Autor
+
+Marcelo Detlefsen - 24554
