@@ -1,10 +1,24 @@
 package com.example.laboratorio5.data.model
 
+import com.google.gson.annotations.SerializedName
+
 data class Pokemon(
     val id: Int,
     val name: String,
-    val url: String,
+    val url: String = "",
     val imageUrl: String = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/$id.png"
+)
+
+data class PokemonListResponse(
+    @SerializedName("results")
+    val results: List<PokemonBasic>
+)
+
+data class PokemonBasic(
+    @SerializedName("name")
+    val name: String,
+    @SerializedName("url")
+    val url: String
 )
 
 data class PokemonDetail(
@@ -20,13 +34,4 @@ data class PokemonSprites(
     val back_default: String?,
     val front_shiny: String?,
     val back_shiny: String?
-)
-
-data class PokemonListResponse(
-    val results: List<PokemonBasic>
-)
-
-data class PokemonBasic(
-    val name: String,
-    val url: String
 )
